@@ -53,7 +53,20 @@ The system monitors environmental conditions using sensors and provides alerts t
 
 ## Screenshots
 
-(Add screenshots here later)
+### Login Screen
+![Login](screenshots/login.png)
+
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Graph Screen
+![Graph](screenshots/graph.png)
+
+### Chatbot
+![Chatbot](screenshots/chatbot.png)
+
+### Sensor Readings
+![Sensor](screenshots/sensor_readings.png)
 
 ---
 
