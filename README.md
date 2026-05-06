@@ -60,7 +60,7 @@ The system monitors environmental conditions using sensors and provides alerts t
 ![Dashboard](screenshots/dashboard.jpeg)
 
 ### Alert popup
-![Alert](screenshots/alert popup.jpeg)
+![Alert](screenshots/alert_popup.jpeg)
 
 ### Chatbot
 ![Chatbot](screenshots/chatbot.jpeg)
