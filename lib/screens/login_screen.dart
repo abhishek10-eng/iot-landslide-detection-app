@@ -12,6 +12,51 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+  final FocusNode passwordFocus = FocusNode();
+
+  bool isPasswordVisible = false;
+  bool isLoading = false;
+
+  Future<void> handleLogin() async {
+    final username = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      showMessage("Please enter username and password");
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final success = await ApiService.login(username, password);
+
+      if (success) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        showMessage("Invalid username or password");
+      }
+    } catch (e) {
+      showMessage("Server error or no internet");
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  void showMessage(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    passwordFocus.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,8 +75,14 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 40),
+
+            /// 🔹 USERNAME FIELD
             TextField(
               controller: emailController,
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) {
+                FocusScope.of(context).requestFocus(passwordFocus);
+              },
               decoration: InputDecoration(
                 labelText: 'Username',
                 filled: true,
@@ -41,10 +92,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
+
             const SizedBox(height: 20),
+
+            /// 🔹 PASSWORD FIELD WITH EYE ICON
             TextField(
               controller: passwordController,
-              obscureText: true,
+              focusNode: passwordFocus,
+              obscureText: !isPasswordVisible,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => handleLogin(),
               decoration: InputDecoration(
                 labelText: 'Password',
                 filled: true,
@@ -52,9 +109,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      isPasswordVisible = !isPasswordVisible;
+                    });
+                  },
+                ),
               ),
             ),
+
             const SizedBox(height: 30),
+
+            /// 🔹 LOGIN BUTTON
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -65,35 +135,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                onPressed: () async {
-                  final username = emailController.text.trim();
-                  final password = passwordController.text.trim();
-
-                  if (username.isEmpty || password.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Please enter credentials"),
+                onPressed: isLoading ? null : handleLogin,
+                child: isLoading
+                    ? const CircularProgressIndicator(
+                        color: Colors.white,
+                      )
+                    : const Text(
+                        'Login',
+                        style: TextStyle(fontSize: 18),
                       ),
-                    );
-                    return;
-                  }
-
-                  final success = await ApiService.login(username, password);
-
-                  if (success) {
-                    Navigator.pushReplacementNamed(context, '/home');
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Invalid username or password"),
-                      ),
-                    );
-                  }
-                },
-                child: const Text(
-                  'Login',
-                  style: TextStyle(fontSize: 18),
-                ),
               ),
             ),
           ],

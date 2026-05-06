@@ -19,6 +19,9 @@ class _SensorReadingScreenState extends State<SensorReadingScreen>
   SensorData? data;
   Timer? _timer;
 
+  double moistureThreshold = 70; // change if needed
+  double tiltThreshold = 3.5; // change if needed
+
   @override
   void initState() {
     super.initState();
@@ -40,18 +43,28 @@ class _SensorReadingScreenState extends State<SensorReadingScreen>
   // 🔹 Load first data from backend
   void loadInitialData() async {
     final newData = await ApiService.fetchSensorData();
+
+    if (!mounted) return;
+
     setState(() {
       data = SensorData.fromJson(newData);
     });
+
+    checkDangerCondition();
   }
 
   // 🔹 Auto refresh every 5 seconds
   void startAutoRefresh() {
     _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       final newData = await ApiService.fetchSensorData();
+
+      if (!mounted) return;
+
       setState(() {
         data = SensorData.fromJson(newData);
       });
+
+      checkDangerCondition();
     });
   }
 
@@ -61,6 +74,8 @@ class _SensorReadingScreenState extends State<SensorReadingScreen>
 
     await ApiService.simulateLandslide();
     final newData = await ApiService.fetchSensorData();
+
+    if (!mounted) return;
 
     setState(() {
       data = SensorData.fromJson(newData);
@@ -107,8 +122,55 @@ class _SensorReadingScreenState extends State<SensorReadingScreen>
   }
 
   Color statusColor() {
-    if (data!.status.contains("DANGER")) return Colors.red;
+    String status = getStatus();
+
+    if (status == "DANGER") return Colors.red;
+    if (status == "MOISTURE HIGH") return Colors.orange;
+    if (status == "TILT HIGH") return Colors.orange;
+
     return Colors.green;
+  }
+
+  bool isDanger() {
+    if (data == null) return false;
+
+    return data!.soilMoisture > moistureThreshold &&
+        data!.tiltAngle.abs() > tiltThreshold;
+  }
+
+  String getStatus() {
+    bool moistureHigh = data!.soilMoisture > moistureThreshold;
+    bool tiltHigh = data!.tiltAngle.abs() > tiltThreshold;
+
+    if (moistureHigh && tiltHigh) {
+      return "DANGER";
+    }
+
+    if (moistureHigh) {
+      return "MOISTURE HIGH";
+    }
+
+    if (tiltHigh) {
+      return "TILT HIGH";
+    }
+
+    return "SAFE";
+  }
+
+  void checkDangerCondition() {
+    if (isDanger()) {
+      if (!_alertShown) {
+        _alertShown = true;
+
+        _blinkController.repeat(reverse: true);
+
+        showDangerDialog();
+      }
+    } else {
+      // Reset alert when system becomes safe
+      _alertShown = false;
+      _blinkController.stop();
+    }
   }
 
   @override
@@ -129,17 +191,13 @@ class _SensorReadingScreenState extends State<SensorReadingScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text("Sensor Readings"),
-        backgroundColor: data!.status.contains("DANGER")
-            ? _blinkAnimation.value
-            : Colors.green,
+        backgroundColor: isDanger() ? _blinkAnimation.value : statusColor(),
       ),
       body: AnimatedBuilder(
         animation: _blinkController,
         builder: (context, child) {
           return Container(
-            color: data!.status.contains("DANGER")
-                ? Colors.red.shade50
-                : Colors.white,
+            color: isDanger() ? Colors.red.shade50 : Colors.white,
             padding: const EdgeInsets.all(16),
             child: child,
           );
@@ -147,12 +205,17 @@ class _SensorReadingScreenState extends State<SensorReadingScreen>
         child: Column(
           children: [
             infoTile("Soil Moisture", "${data!.soilMoisture}%"),
-            infoTile("Vibration", data!.vibration.toString()),
+            const SizedBox(height: 10),
+            const Text(
+              "Tilt Sensor",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             infoTile("Tilt Angle", "${data!.tiltAngle}°"),
+            infoTile("Vibration", data!.vibration.toString()),
             infoTile("Rainfall", "${data!.rainfall} mm"),
             const SizedBox(height: 20),
             Text(
-              "Status: ${data!.status}",
+              "Status: ${getStatus()}",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -160,11 +223,6 @@ class _SensorReadingScreenState extends State<SensorReadingScreen>
               ),
             ),
             const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: simulateLandslide,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text("Simulate Landslide"),
-            ),
           ],
         ),
       ),
@@ -182,4 +240,27 @@ class _SensorReadingScreenState extends State<SensorReadingScreen>
       ),
     );
   }
+}
+
+Widget expandedTile(String title, String value) {
+  return Expanded(
+    child: Card(
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          children: [
+            Text(title),
+            const SizedBox(height: 5),
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

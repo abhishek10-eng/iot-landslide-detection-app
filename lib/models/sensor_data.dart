@@ -1,8 +1,8 @@
 class SensorData {
-  final int soilMoisture;
+  final double soilMoisture;
   final double vibration;
-  final int tiltAngle;
-  final int rainfall;
+  final double tiltAngle;
+  final double rainfall;
   final String status;
 
   SensorData({
@@ -15,11 +15,11 @@ class SensorData {
 
   factory SensorData.fromJson(Map<String, dynamic> json) {
     return SensorData(
-      soilMoisture: json['soilMoisture'],
-      vibration: (json['vibration'] as num).toDouble(),
-      tiltAngle: json['tiltAngle'],
-      rainfall: json['rainfall'],
-      status: json['status'],
+      soilMoisture: (json['soilMoisture'] ?? 0).toDouble(),
+      vibration: (json['vibration'] ?? 0).toDouble(),
+      tiltAngle: (json['tiltAngle'] ?? 0).toDouble(),
+      rainfall: (json['rainfall'] ?? 0).toDouble(),
+      status: json['status'] ?? "SAFE",
     );
   }
 }

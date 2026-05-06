@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = "http://192.168.1.33:5000";
+  static const String baseUrl = "https://landslide-backend-7by2.onrender.com";
   static String? token;
 
   // ---------------- LOGIN ----------------
@@ -38,7 +38,7 @@ class ApiService {
         "Content-Type": "application/json",
       },
     );
-
+    print(response.body); // ADD THIS
     if (response.statusCode != 200) {
       throw Exception("Unauthorized or server error");
     }
